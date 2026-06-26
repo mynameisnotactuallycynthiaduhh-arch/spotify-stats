@@ -8,7 +8,12 @@ const SpotifyIcon = () => (
   </svg>
 )
 
-export default function Login() {
+export default function Login({ error }) {
+  async function handleLogin() {
+    const url = await getLoginUrl()
+    window.location.href = url
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
@@ -29,10 +34,12 @@ export default function Login() {
           Top songs, artists, albums, and listening stats — pulled live from your Spotify account.
         </p>
 
-        <a href={getLoginUrl()} className={styles.btn}>
+        <button className={styles.btn} onClick={handleLogin}>
           <SpotifyIcon />
           Log in with Spotify
-        </a>
+        </button>
+
+        {error && <p className={styles.error}>{error}</p>}
 
         <p className={styles.note}>
           Read-only access. Nothing is stored.
