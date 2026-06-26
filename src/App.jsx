@@ -10,7 +10,6 @@ export default function App() {
 
   useEffect(() => {
     async function init() {
-      // Check for ?code= in URL (returning from Spotify OAuth)
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
       const errorParam = params.get('error')
@@ -23,7 +22,6 @@ export default function App() {
       }
 
       if (code) {
-        // Clean URL immediately so refresh doesn't re-use the code
         window.history.replaceState(null, '', window.location.pathname)
         try {
           const { token, expiresAt } = await exchangeCodeForToken(code)
@@ -36,7 +34,6 @@ export default function App() {
         return
       }
 
-      // Check sessionStorage for existing token
       const stored = getStoredToken()
       if (stored) setToken(stored)
       setReady(true)
