@@ -1,0 +1,68 @@
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.6rem 1.5rem;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--border-hover); }
+
+.accent {
+  background: #0b1a10;
+  border-color: #1e3d26;
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+
+.accent .eyebrow { color: #4caf74; }
+
+.value {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3.5vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.valueGreen { color: var(--green); }
+
+.label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+
+.accent .label { color: #4caf74; opacity: 0.7; }
+
+/* Skeletons */
+.skelValue {
+  height: 2.4rem;
+  width: 55%;
+  background: #222;
+  border-radius: 6px;
+  animation: shimmer 1.4s ease infinite;
+  margin-bottom: 0.5rem;
+}
+
+.skelLabel {
+  height: 0.75rem;
+  width: 70%;
+  background: #1a1a1a;
+  border-radius: 4px;
+  animation: shimmer 1.4s ease infinite;
+  animation-delay: 0.1s;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.65; }
+}
