@@ -1,5 +1,5 @@
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID
-const REDIRECT_URI = window.location.origin + window.location.pathname
+const REDIRECT_URI = window.location.origin + window.location.pathname.replace(/\/$/, '')
 
 const SCOPES = [
   'user-read-private',
@@ -10,27 +10,72 @@ const SCOPES = [
   'user-read-recently-played',
 ].join(' ')
 
-export function getLoginUrl() {
+// ── PKCE helpers ─────────────────────────────────────────────────────────────
+
+function generateRandomString(length) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const array = new Uint8Array(length)
+  crypto.getRandomValues(array)
+  return Array.from(array).map((b) => chars[b % chars.length]).join('')
+}
+
+async function sha256(plain) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(plain)
+  return crypto.subtle.digest('SHA-256', data)
+}
+
+function base64urlEncode(buffer) {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export async function getLoginUrl() {
+  const codeVerifier = generateRandomString(64)
+  const hashed = await sha256(codeVerifier)
+  const codeChallenge = base64urlEncode(hashed)
+
+  sessionStorage.setItem('spotify_code_verifier', codeVerifier)
+
   const params = new URLSearchParams({
-    response_type: 'token',
+    response_type: 'code',
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     scope: SCOPES,
-    show_dialog: 'false',
+    code_challenge_method: 'S256',
+    code_challenge: codeChallenge,
   })
+
   return `https://accounts.spotify.com/authorize?${params}`
 }
 
-export function getTokenFromHash() {
-  const hash = window.location.hash.substring(1)
-  const params = new URLSearchParams(hash)
-  const token = params.get('access_token')
-  const expiresIn = params.get('expires_in')
-  if (token) {
-    const expiresAt = Date.now() + parseInt(expiresIn, 10) * 1000
-    return { token, expiresAt }
+export async function exchangeCodeForToken(code) {
+  const codeVerifier = sessionStorage.getItem('spotify_code_verifier')
+  if (!codeVerifier) throw new Error('No code verifier found')
+
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: REDIRECT_URI,
+      client_id: CLIENT_ID,
+      code_verifier: codeVerifier,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error_description || 'Token exchange failed')
   }
-  return null
+
+  const data = await res.json()
+  sessionStorage.removeItem('spotify_code_verifier')
+  return {
+    token: data.access_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  }
 }
 
 export function getStoredToken() {
@@ -50,6 +95,7 @@ export function storeToken(token, expiresAt) {
 export function clearToken() {
   sessionStorage.removeItem('spotify_token')
   sessionStorage.removeItem('spotify_expires_at')
+  sessionStorage.removeItem('spotify_code_verifier')
 }
 
 export async function spotifyGet(endpoint, token) {
